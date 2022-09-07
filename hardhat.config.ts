@@ -7,29 +7,31 @@ import { resolve } from "path";
 import "./tasks/accounts";
 import "./tasks/deploy";
 
-dotenvConfig({ path: resolve(__dirname, "./.env") });
+const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || "./.env";
+dotenvConfig({ path: resolve(__dirname, dotenvConfigPath) });
 
 // Ensure that we have all the environment variables we need.
-const mnemonic: string | undefined = process.env.MNEMONIC;
-if (!mnemonic) {
-  throw new Error("Please set your MNEMONIC in a .env file");
+const privateKey1: string = process.env.ACCOUNT_PRIVATE_KEY_1 || "";
+const privateKey2: string = process.env.ACCOUNT_PRIVATE_KEY_2 || "";
+if (!privateKey1 || !privateKey2) {
+  throw new Error("Please set your ACCOUNT_PRIVATE_KEY in a .env file");
 }
 
-const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
-if (!infuraApiKey) {
-  throw new Error("Please set your INFURA_API_KEY in a .env file");
+const alchemyApiKey: string | undefined = process.env.ALCHEMY_API_KEY;
+if (!alchemyApiKey) {
+  throw new Error("Please set your ALCHEMY_API_KEY in a .env file");
 }
 
 const chainIds = {
   "arbitrum-mainnet": 42161,
   avalanche: 43114,
   bsc: 56,
+  goerli: 5,
   hardhat: 31337,
   mainnet: 1,
   "optimism-mainnet": 10,
   "polygon-mainnet": 137,
   "polygon-mumbai": 80001,
-  rinkeby: 4,
 };
 
 function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
@@ -42,14 +44,10 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
       jsonRpcUrl = "https://bsc-dataseed1.binance.org";
       break;
     default:
-      jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
+      jsonRpcUrl = `https://eth-rinkeby.alchemyapi.io/v2/${alchemyApiKey}`;
   }
   return {
-    accounts: {
-      count: 10,
-      mnemonic,
-      path: "m/44'/60'/0'/0",
-    },
+    accounts: [privateKey1, privateKey2],
     chainId: chainIds[chain],
     url: jsonRpcUrl,
   };
@@ -62,11 +60,11 @@ const config: HardhatUserConfig = {
       arbitrumOne: process.env.ARBISCAN_API_KEY || "",
       avalanche: process.env.SNOWTRACE_API_KEY || "",
       bsc: process.env.BSCSCAN_API_KEY || "",
+      goerli: process.env.ETHERSCAN_API_KEY || "",
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       optimisticEthereum: process.env.OPTIMISM_API_KEY || "",
       polygon: process.env.POLYGONSCAN_API_KEY || "",
       polygonMumbai: process.env.POLYGONSCAN_API_KEY || "",
-      rinkeby: process.env.ETHERSCAN_API_KEY || "",
     },
   },
   gasReporter: {
@@ -77,19 +75,16 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      accounts: {
-        mnemonic,
-      },
       chainId: chainIds.hardhat,
     },
     arbitrum: getChainConfig("arbitrum-mainnet"),
     avalanche: getChainConfig("avalanche"),
     bsc: getChainConfig("bsc"),
+    goerli: getChainConfig("goerli"),
     mainnet: getChainConfig("mainnet"),
     optimism: getChainConfig("optimism-mainnet"),
     "polygon-mainnet": getChainConfig("polygon-mainnet"),
     "polygon-mumbai": getChainConfig("polygon-mumbai"),
-    rinkeby: getChainConfig("rinkeby"),
   },
   paths: {
     artifacts: "./artifacts",
